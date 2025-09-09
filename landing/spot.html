@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -86,13 +87,58 @@
   .doc:hover{
     background:rgba(20,184,166,.15);
   }
+  
+  /* Evidenziazione rossa per pulsanti "hot" */
+  .btn.is-hot, a.is-hot {
+    outline: 3px solid #e11d48;
+    box-shadow: 0 0 0 4px rgba(225,29,72,.25);
+    border-radius: 10px;
+  }
+
+  :root{
+    /* IDENTICO al bottone PDF */
+    --spot-chip-bg: #0f766e;       /* stesso verde dei PDF */
+    --spot-chip-bg-hover: #115e59; /* hover più scuro */
+    --spot-chip-text: #e6fff7;
+    --spot-chip-border-active: #22d3ee; /* ciano per attivate (pertinenti) */
+  }
+
+  /* griglia: 1 col mobile, 2 col tablet, 3 col desktop */
+  /* === PATCH ULTRA-SEMPLICE: 2 colonne, verde identico PDF === */
+  :root{
+    --chip-bg: #0f766e;          /* verrà sovrascritto via JS col colore reale dei PDF */
+    --chip-bg-hover:#115e59;
+    --chip-text:#e6fff7;
+    --chip-border-active:#22d3ee; /* ciano */
+  }
+
+  .norme-grid{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0,1fr)); /* 2 colonne fisse */
+    gap:12px;
+  }
+
+  .norma-chip{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:100%; min-height:44px; padding:10px 14px;
+    border-radius:10px;
+    background:var(--chip-bg);
+    color:var(--chip-text);
+    border:2px solid transparent;               /* niente bordo di base */
+    text-decoration:none; font-weight:600;
+    line-height:1.25; white-space:normal;
+    word-break:break-word; hyphens:auto;
+    font-size:clamp(12px, 1.6vw, 16px);         /* le etichette lunghe non esplodono */
+  }
+  .norma-chip:hover,.norma-chip:focus{ background:var(--chip-bg-hover); }
+  .norma-chip.is-active{ border-color:var(--chip-border-active); }
 </style>
 </head>
 <body>
   <nav class="top">
-    <a href="home.html" class="btn">Home</a>
-    <a href="mappa-ministeri.html" class="btn">Mappa</a>
-    <a href="spot.html" class="btn">Spot</a>
+    <a href="/dms-gemello-news/landing/home.html" class="btn">Home</a>
+    <a href="/dms-gemello-news/landing/mappa-ministeri.html" class="btn">Mappa</a>
+    <a href="/dms-gemello-news/landing/spot.html" class="btn">Spot</a>
   </nav>
 
   <div class="wrap">
@@ -130,6 +176,43 @@
             <source src="/dms-gemello-news/landing/videos/teaser-23.mp4?v=20250905a" type="video/mp4">
           </video>
         </div>
+      </section>
+
+      <!-- ancora per scroll stabile -->
+      <div id="goto-norme" style="position:relative;top:-80px;"></div>
+
+      <section id="riferimenti-normativi" class="norme-grid" style="margin-top:40px">
+        <h2 style="grid-column: 1 / -1;">Riferimenti normativi & PNRR</h2>
+        <a href="#" class="norma-chip" data-norm="sdg" target="_blank" rel="noopener">
+          Single Digital Gateway (Reg. UE 2018/1724)
+        </a>
+        <a href="#" class="norma-chip" data-norm="interop" target="_blank" rel="noopener">
+          Interoperable Europe (Reg. UE 2024/903)
+        </a>
+        <a href="#" class="norma-chip" data-norm="eidas2" target="_blank" rel="noopener">
+          eIDAS 2 – Digital Wallet (Reg. UE 2024/1183)
+        </a>
+        <a href="#" class="norma-chip" data-norm="espr" target="_blank" rel="noopener">
+          ESPR & Digital Product Passport (Reg. UE 2024/1781)
+        </a>
+        <a href="#" class="norma-chip" data-norm="bolk" target="_blank" rel="noopener">
+          Direttiva Servizi (2006/123/CE – "Bolkestein")
+        </a>
+        <a href="#" class="norma-chip" data-norm="suap" target="_blank" rel="noopener">
+          SUAP – DPR 160/2010
+        </a>
+        <a href="#" class="norma-chip" data-norm="dogane" target="_blank" rel="noopener">
+          Riforma Dogane UE (pacchetto COM(2023) 258–260)
+        </a>
+        <a href="#" class="norma-chip" data-norm="pnrr" target="_blank" rel="noopener">
+          PNRR – Italia Domani
+        </a>
+        <a href="#" class="norma-chip" data-norm="pdnd" target="_blank" rel="noopener">
+          PDND – Piattaforma Digitale Nazionale Dati
+        </a>
+        <a href="#" class="norma-chip" data-norm="agid" target="_blank" rel="noopener">
+          AgID – Linee guida interoperabilità
+        </a>
       </section>
     </section>
   </div>
@@ -225,9 +308,11 @@
       a.target = '_blank';
       a.rel = 'noopener';
       
-      // Aggiungo data-doc per evidenziazione hash
+      // Aggiungo data-doc per evidenziazione hash e data-spot + id per evidenziazione rossa
       const slug = title.toLowerCase().replace(/\s+/g,'-').replace(/[^\w-]/g,'');
       a.setAttribute('data-doc', slug);
+      a.setAttribute('data-spot', slug);
+      a.id = slug;
       a.innerHTML = `<span>${title}</span><span>Apri ⤴</span>`;
       list.appendChild(a);
     });
@@ -242,6 +327,49 @@
       btn.classList.add('is-active');
       btn.scrollIntoView({behavior:'smooth',block:'center'});
     }
+  })();
+
+  // Evidenziazione rossa per pulsanti "hot" da parametri URL
+  (function(){
+    const q = new URLSearchParams(location.search);
+    const raw = (q.get("hot")||"").split(",").map(s=>s.trim()).filter(Boolean);
+    if (!raw.length) return;
+
+    const norm = s => s.toLowerCase().replace(/\s+/g,'').replace(/[^\p{L}\p{N}]/gu,'');
+
+    const pool = Array.from(document.querySelectorAll('a,button'))
+      .filter(el => (el.href||'').includes('/assets/doc/') || el.dataset.spot);
+
+    const byId = id => document.getElementById(id) ||
+                       document.querySelector(`[data-spot="${id}"]`);
+
+    const hot = new Set();
+    raw.forEach(tok => {
+      const t = norm(tok);
+      let hit = false;
+
+      // 1) prova id/data-spot
+      const idHit = byId(tok);
+      if (idHit) { hot.add(idHit); hit = true; }
+
+      // 2) fallback: match per contenuto testuale
+      if (!hit) {
+        pool.forEach(el=>{
+          const label = norm(el.textContent||"");
+          if (label.includes(t)) hot.add(el);
+        });
+      }
+    });
+
+    // applica stile e rimuovi al click
+    let first = null;
+    hot.forEach(el=>{
+      el.classList.add('is-hot');
+      if (!first) first = el;
+      el.addEventListener('click', ()=> el.classList.remove('is-hot'), {once:true});
+    });
+    if (first) first.scrollIntoView({behavior:'smooth', block:'start'});
+
   })();
 </script>
 
@@ -273,6 +401,1963 @@ window.DOC_MAP = {
 };
 </script>
 
+<script>
+// === PATCH ULTRA-SEMPLICE ===
+
+// === 0) copia il COLORE esatto dei bottoni PDF ===
+(function(){
+  // selettore di un bottone PDF già presente nella colonna sinistra
+  const pdfBtn = document.querySelector('.spot .doc-list a, .spot .btn-pdf, .doc-card a, .panel a[href$=".pdf"]');
+  if (pdfBtn){
+    const s = getComputedStyle(pdfBtn);
+    document.documentElement.style.setProperty('--chip-bg', s.backgroundColor);
+    document.documentElement.style.setProperty('--chip-text', s.color);
+  }
+})();
+
+// === 1) disattiva qualunque anteprima inline/iframe ===
+const preview = document.getElementById('doc-preview');
+if (preview){ preview.style.display='none'; }
+
+// forza sempre nuova tab (anche su PDF della lista)
+document.querySelectorAll('#riferimenti-normativi a, .spot a[href$=".pdf"]').forEach(a=>{
+  a.setAttribute('target','_blank'); a.setAttribute('rel','noopener');
+  a.addEventListener('click', (e)=>{
+    // lascia il default del browser: evita preventDefault (alcuni popup blocker bloccano window.open)
+    e.stopPropagation();
+  }, {passive:true});
+});
+
+// === 2) scroll affidabile alla sezione quando arrivo dalla mappa ===
+(function(){
+  const hash = window.location.hash;
+  if (hash === '#riferimenti-normativi' || hash === '#norme') {
+    setTimeout(()=>{
+      (document.getElementById('goto-norme') || document.getElementById('riferimenti-normativi'))
+        ?.scrollIntoView({behavior:'instant', block:'start'});
+    },0);
+  }
+})();
+
+// === 3) evidenzia SOLO le norme pertinenti al ministero (bordo ciano) ===
+const NORMA_MAP = {
+  'MEF':['sdg','interop','pdnd','pnrr'],
+  'MIMIT':['espr','eidas2','bolk','interop'],
+  'ADM':['dogane','pdnd','sdg'],
+  'AE':['pdnd','pnrr','sdg'],
+  'MIT':['sdg','pnrr','suap'],
+  'Interno':['sdg','pdnd'],
+  'Salute':['pdnd','eidas2','interop'],
+  'Turismo':['sdg','pnrr'],
+  'MASAF':['pnrr','pdnd'],
+  'MASE':['pnrr','espr'],
+  'MIC':['sdg','pnrr'],
+  'MIM':['pnrr','pdnd'],
+  'MAECI':['interop','eidas2'],
+  'AgID':['interop','pdnd'],
+  'PagoPA':['sdg','pnrr','pdnd']
+};
+
+(function(){
+  const q = new URLSearchParams(location.search);
+  const min = q.get('min');             // es. ?min=MEF
+  const set = new Set(NORMA_MAP[min] || []);
+  document.querySelectorAll('#riferimenti-normativi .norma-chip').forEach(el=>{
+    el.classList.toggle('is-active', set.has(el.dataset.norm));
+  });
+})();
+</script>
+
 </body>
 </html>
 
+=======
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+olor:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:8px 10px;font:600 12px system-ui";b.textContent="proof: nuke-all-v2";document.body.appendChild(b);}})();</script>
+</body>#g
+>>>>>>> Stashed changes
