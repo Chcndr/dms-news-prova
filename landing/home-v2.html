@@ -381,7 +381,7 @@
   <div id="viewport" aria-label="contenuti">
     <video id="heroVideo" src="/dms-gemello-news/videos/video-hero.mp4"
       muted playsinline webkit-playsinline preload="metadata" autoplay loop
-      poster="/dms-gemello-news/assets/poster-hero.jpg"></video>
+      poster="/dms-news-pro/dms-news-prova//dms-news-prova/assets/poster-hero.jpg"></video>
     
     <!-- PANEL dentro lo stesso viewport del video -->
     <!-- MOD-00 START -->
@@ -719,7 +719,7 @@
   // Anti-flicker: non cambiare layout; il video resta montato, solo opacity
   if(hero){
     hero.preload = hero.preload || 'metadata';
-    if(!hero.poster) hero.poster = './assets/poster-hero.jpg'; // se esiste
+    if(!hero.poster) hero.poster = /dms-news-prova//dms-news-prova/assets/poster-hero.jpg'; // se esiste
     hero.muted = true; hero.playsInline = true;
   }
 

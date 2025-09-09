@@ -1,1086 +1,1096 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DMS · Gemello Digitale — Mappa Ministeri</title>
-  <style>
-    /* Reset e base */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    /* Pagina fissa per zoom funzionante */
-    html, body {
-      height: 100vh;
-      overflow: hidden;
-      background: #0b1f26;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #d7eef9;
-    }
-    
-    /* Navbar */
-    .topnav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 2000;
-      display: flex;
-      gap: 0;
-      background: rgba(11, 22, 27, 0.95);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .topnav a {
-      display: block;
-      padding: 12px 20px;
-      color: #d7eef9;
-      text-decoration: none;
-      font-weight: 500;
-      border-bottom: 3px solid transparent;
-      transition: all 0.2s ease;
-    }
-    
-    .topnav a:hover {
-      background: rgba(22, 42, 51, 0.8);
-      color: #ffffff;
-    }
-    
-    .topnav a.active {
-      background: #0f7a4c;
-      color: white;
-      border-bottom-color: #0b5f3a;
-    }
-    
-    /* Container principale */
-    .main-container {
-      position: fixed;
-      top: 60px;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    
-    /* Pannello comandi */
-    .controls-panel {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 20px;
-      padding: 12px 24px;
-      background: rgba(11, 22, 27, 0.8);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    
-    .control-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .control-group label {
-      font-size: 14px;
-      font-weight: 500;
-      color: #d7eef9;
-    }
-    
-    .control-group input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: #0f7a4c;
-    }
-    
-    .search-input {
-      padding: 8px 12px;
-      background: rgba(22, 42, 51, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      color: #eaf1f5;
-      font-size: 14px;
-      width: 200px;
-    }
-    
-    .search-input::placeholder {
-      color: #7a9aa8;
-    }
-    
-    .page-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #d7eef9;
-    }
-    
-    /* Container mappa fisso */
-    #mapContainer {
-      position: relative;
-      width: min(1280px, 96vw);
-      height: min(800px, 80vh);
-      background: #0b161b;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 
-        0 0 0 1px rgba(255, 255, 255, 0.06),
-        0 30px 120px rgba(0, 0, 0, 0.55),
-        inset 0 0 120px rgba(0, 206, 255, 0.03);
-      transform-origin: center center;
-      transition: transform 0.3s ease;
-    }
-    
-    /* Zoom levels */
-    #mapContainer.zoom-80 { transform: scale(0.8); }
-    #mapContainer.zoom-100 { transform: scale(1.0); }
-    #mapContainer.zoom-120 { transform: scale(1.2); }
-    
-    /* Linee radiali */
-    .spoke {
-      position: absolute;
-      inset: 0;
-      z-index: 5;
-      transform-origin: center center;
-      transition: transform 0.1s linear;
-    }
-    
-    /* Linee radiali */
-    #spokes {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      pointer-events: none;
-    }
-    
-    .spoke {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      height: 2px;
-      width: calc(var(--spoke-length, 240px) - 40px);
-      transform-origin: 0 0;
-      opacity: 0.8;
-      background: linear-gradient(to right, rgba(0, 206, 255, 0.6), rgba(0, 206, 255, 0.2) 70%, transparent);
-      box-shadow: 0 0 4px rgba(0, 206, 255, 0.4);
-      transition: opacity 0.3s ease, width 0.3s ease;
-    }
-    
-    #spokes.hidden .spoke {
-      opacity: 0;
-    }
-    
-    /* Nodi ministeri */
-    .node {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 160px;
-      height: 90px;
-      transform: translate(-50%, -50%) rotate(var(--counter-rotate, 0deg));
-      background: rgba(22, 42, 51, 0.95);
-      color: #d7eef9;
-      border: none;
-      border-radius: 16px;
-      font-weight: 600;
-      font-size: 13px;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 
-        0 0 0 1px rgba(255, 255, 255, 0.08),
-        0 10px 35px rgba(0, 206, 255, 0.10),
-        inset 0 0 28px rgba(0, 206, 255, 0.25);
-      -webkit-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-      z-index: 20;
-    }
-    
-    .node:hover, .node:focus {
-      background: #1a3240;
-      box-shadow: 
-        0 0 0 1px rgba(255, 255, 255, 0.12),
-        0 15px 45px rgba(0, 206, 255, 0.20),
-        inset 0 0 35px rgba(0, 206, 255, 0.35);
-      transform: translate(-50%, -50%) rotate(var(--counter-rotate, 0deg)) scale(1.02);
-    }
-    
-    .node:active {
-      transform: translate(-50%, -50%) rotate(var(--counter-rotate, 0deg)) scale(0.98);
-      box-shadow: 
-        0 0 0 1px rgba(255, 255, 255, 0.15),
-        0 20px 55px rgba(0, 206, 255, 0.30),
-        inset 0 0 42px rgba(0, 206, 255, 0.45);
-    }
-    
-    .node:focus {
-      outline: 2px solid rgba(110, 227, 255, 0.6);
-      outline-offset: 2px;
-    }
-    
-    .node.filtered {
-      opacity: 0.3;
-      pointer-events: none;
-    }
-    
-    /* Logo centrale */
-    #hubIcon {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 120px;
-      height: 120px;
-      z-index: 20;
-      filter: 
-        drop-shadow(0 0 20px rgba(0, 206, 255, 0.8))
-        drop-shadow(0 0 40px rgba(0, 206, 255, 0.6))
-        drop-shadow(0 0 60px rgba(0, 206, 255, 0.4));
-      cursor: pointer;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="build" content="MAP-FIX-V2">
+<title>Mappa Ministeri — sandbox</title>
+<style>
+:root{
+  --node: clamp(176px, 12.5vw, 256px);
+  --radius: 18px;
+  --ink: #e7fbf5;
+  --chip: rgba(15,32,36,.76);
+  --stroke: rgba(255,255,255,.10);
+}
 
-    #hubIcon svg {
-      width: 100%;
-      height: 100%;
-    }
-    
-    /* Modal */
-    #modal {
-      position: fixed;
-      inset: 0;
-      z-index: 3000;
-      display: none;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
-    }
-    
-    #modal.is-open {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .modal-card {
-      width: min(92vw, 1140px);
-      max-height: 90vh;
-      background: #0b161b;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 30px 120px rgba(0, 0, 0, 0.7);
-      transform: scale(1);
-      transition: transform 0.2s ease;
-    }
-    
-    #modal:not(.is-open) .modal-card {
-      transform: scale(0.95);
-    }
-    
-    .modal-header {
-      background: #0f7a4c;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 20px;
-    }
-    
-    .modal-back {
-      background: #0b5f3a;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: background 0.2s ease;
-    }
-    
-    .modal-back:hover {
-      background: #0a5232;
-    }
-    
-    .modal-title {
-      flex: 1;
-      font-size: 18px;
-      font-weight: 700;
-      margin: 0;
-    }
-    
-    .modal-spot {
-      background: #0e2230;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 14px;
-      font-weight: 500;
-      transition: background 0.2s ease;
-    }
-    
-    .modal-spot:hover {
-      background: #1a3240;
-    }
-    
-    .modal-body {
-      padding: 20px;
-      max-height: calc(90vh - 80px);
-      overflow-y: auto;
-    }
-    
-    .doc-card {
-      margin: 0 0 16px 0;
-    }
-    
-    .doc-card img {
-      width: 100%;
-      height: auto;
-      display: block;
-      border-radius: 10px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* Zoom controls */
-    .zoom-controls {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      gap: 8px;
-      z-index: 100;
-    }
-    
-    .zoom-btn {
-      width: 36px;
-      height: 36px;
-      background: rgba(11, 22, 27, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      color: #d7eef9;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-    
-    .zoom-btn:hover {
-      background: rgba(11, 22, 27, 1);
-      color: #ffffff;
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-    
-    .zoom-btn.active {
-      background: #0f7a4c;
-      color: #fff;
-      border-color: #0f7a4c;
-    }
-    
-    /* Responsive */
-    @media (max-width: 768px) {
-      .controls-panel {
-        flex-direction: column;
-        gap: 12px;
-        padding: 16px;
-      }
-      
-      .search-input {
-        width: 100%;
-      }
-      
-      .node {
-        width: 120px;
-        height: 70px;
-        font-size: 11px;
-      }
-      
-      #centerLogo {
-        width: 70px;
-        heig    /* Anelli concentrici - COMPLETAMENTE FISSI */
-    #ring-inner, #ring-outer {
-      position: absolute;
-      inset: 0;
-      z-index: 10;
-    }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font:400 16px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#0a1a1e;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.nav{position:sticky;top:0;z-index:1000;display:flex;gap:8px;align-items:center;padding:12px 16px;background:rgba(10,26,30,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--stroke)}
+.btn{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid var(--stroke);border-radius:999px;background:var(--chip);box-shadow:0 6px 14px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06)}
+.btn:hover{outline:1px solid rgba(255,255,255,.06)}
+.title{margin-left:auto;margin-right:auto;font-weight:700;letter-spacing:.3px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 48px}
 
-    /* NESSUNA animazione per gli anelli */
+#stageWrap{ height: 74vh; position:relative;border:1px solid var(--stroke);border-radius:16px;padding:12px;background:radial-gradient(60% 70% at 50% 12%, rgba(20,184,166,.08) 0%, transparent 60%); }
+#stage{ position: relative; height:100%; min-height:520px; border-radius:12px; overflow:hidden}
 
-    /* Nodi: NESSUNA animazione automatica */
-    /* I nodi si muoveranno solo tramite JavaScript */
+/* TILE QUADRATI allineati come Home */
+.node{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:var(--node); height:var(--node);
+  padding:16px; border-radius:var(--radius);
+  background: var(--chip);
+  border:1px solid var(--stroke);
+  box-shadow:0 6px 18px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.06) inset;
+  display:flex; align-items:center; justify-content:center;
+  text-align:center; color:var(--ink);
+  user-select:none;
+}
+.node .label{
+  font-weight:800; line-height:1.15; letter-spacing:.2px;
+  font-size: clamp(13px,1.05vw,18px);
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+  overflow:hidden; text-wrap:balance;
+}
+/* rimuoviamo la sottoscritta "Agenzia/Ministero" */
+.node .tag{ display:none !important; }
 
-    /* Raggi: gestiti dinamicamente via JavaScript */
-    #spokes {
-      /* Nessuna animazione CSS fissa */
-    }
+/* NODO CENTRALE: logo con glow blu, niente quadro sopra */
+.node.center{
+  width: clamp(220px, 15vw, 300px);
+  height: clamp(220px, 15vw, 300px);
+  background: rgba(15,32,36,.84);
+  border:1px solid rgba(30,144,255,.35);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.06) inset,
+    0 0 40px rgba(30,144,255,.22),
+    0 24px 60px rgba(0,0,0,.40);
+}
+.node.center .label,.node.center .tag{ display:none; }
+.node.center::before{
+  content:""; position:absolute; inset:18%;
+  background:url('../img/ministero-center.png') center/contain no-repeat;
+  z-index:1; filter:brightness(1.1) drop-shadow(0 0 18px rgba(30,144,255,.45));
+  opacity:.96;
+}
+.node.center::after{
+  content:""; position:absolute; inset:-26%; border-radius:40%;
+  background:radial-gradient(60% 70% at 50% 40%, rgba(30,144,255,.22) 0%, transparent 65%);
+  filter:blur(16px); pointer-events:none;
+}
 
-    body:not(.auto-rotate) #spokes {
-      /* Nessuna animazione quando auto-rotate è disabilitato */
-    }
+/* LINEE su canvas: visibilità */
+#links{position:absolute; inset:0; pointer-events:none;}
+:root[data-lines='off'] #links{ opacity:0; }
 
-    /* Centro fisso: logo ministero (no riquadro, glow blu) */
-    #hubIcon{
-      position:absolute;
-      left:50%; top:50%;
-      width:clamp(160px, 13vw, 240px);
-      height:clamp(160px, 13vw, 240px);
-      transform:translate(-50%, -50%);
-      pointer-events:none;
-      z-index: 5;
-      filter:
-        drop-shadow(0 0 32px rgba(56,189,248,.35))
-        drop-shadow(0 8px 22px rgba(0,0,0,.45));
-      opacity:.98;
-    }
+/* foglio/scheda fullscreen */
+:root{
+  --slot:#22c55e;           /* verde slot */
+  --slot-ink:#072814;       /* testo su slot */
+  --sheet-brd:#22c55e;      /* stesso colore del contorno */
+}
 
-    /* Applica il logo come background (SVG inline in data-URL) */
-    #hubIcon::before{
-      content:"";
-      position:absolute; inset:0;
-      background:
-        radial-gradient(60% 60% at 50% 50%, rgba(56,189,248,.18), transparent 60%),
-        url("data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 640' aria-hidden='true'><defs><linearGradient id='g' x1='0' x2='0' y1='0' y2='1'><stop offset='0' stop-color='%23e6f7ff'/><stop offset='1' stop-color='%23c9eeff'/></linearGradient></defs><g fill='url(%23g)' stroke='%2300b3ff' stroke-width='18' stroke-linejoin='round'><path d='M20 246h600L320 92 20 246z'/><rect x='120' y='276' width='80' height='240' rx='6'/><rect x='240' y='276' width='80' height='240' rx='6'/><rect x='320' y='276' width='80' height='240' rx='6'/><rect x='440' y='276' width='80' height='240' rx='6'/><rect x='48'  y='532' width='544' height='30' rx='6'/></g></svg>") center/72% no-repeat;
-    }
+#modal{
+  position:fixed; inset:0; display:none;
+  align-items:flex-start;  /* spinge in alto */
+  justify-content:center;  z-index:9999;
+  padding:72px 16px 24px;  /* distanza top */
+  background:rgba(3,10,12,.72); backdrop-filter:blur(6px);
+}
 
-    /* Assicurati che NON ruoti mai col resto */
-    #hubIcon { will-change: filter, opacity; }
-  </style>
+.sheet{width:min(1080px,92vw); background:transparent; border:0;}
+
+.sheet-head{
+  display:flex; gap:12px; align-items:center;
+  padding:12px 14px; border:1px solid var(--sheet-brd);
+  border-radius:14px 14px 0 0;
+  background:linear-gradient(180deg, rgba(34,197,94,.95), rgba(34,197,94,.90));
+  color:var(--slot-ink);
+  box-shadow:0 10px 24px rgba(0,0,0,.28);
+}
+.sheet-head .ttl{margin:0; font-size:20px; font-weight:800;}
+.sheet-head .actions{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;}
+.btn.cta{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px; border-radius:999px; border:1px solid rgba(0,0,0,.10);
+  background:#ffffff; color:#0b1416;
+}
+.btn.cta[href*="pdf"]::before{content:"📄";}
+.btn.cta[href*="#doc-"]::before{content:"🔗";}
+.btn.x{margin-left:8px; border:1px solid rgba(0,0,0,.2); background:rgba(255,255,255,.8); border-radius:999px; padding:6px 10px;}
+
+.sheet-body{
+  border:1px solid var(--sheet-brd); border-top:0;
+  border-radius:0 0 14px 14px;
+  background:#0f2024ee;            /* bianco se preferisci: #fff */
+  color:#e6f7ff;                    /* #0b1416 se sfondo bianco */
+  padding:16px; box-shadow:0 20px 48px rgba(0,0,0,.35);
+}
+.sheet-body .hero{
+  width:100%; max-height:320px; object-fit:cover; border-radius:12px; margin-bottom:12px; display:none;
+}
+.sheet-body .meta{opacity:.85; font-size:14px; margin:4px 0 12px;}
+.sheet-body .bullets{margin:0 0 12px 18px;}
+.sheet-body .docs{display:flex; flex-wrap:wrap; gap:8px;}
+.doc{display:inline-flex; padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06);}
+
+@media (max-width: 900px){
+  .sheet-head{flex-wrap:wrap;}
+  .sheet-head .actions{width:100%; justify-content:flex-start;}
+}
+
+.panel{margin-top:16px; padding:16px; border:1px solid var(--stroke); border-radius:12px; background:rgba(15,32,36,.42)}
+.panel h3{margin:0 0 8px}
+.meta{color:#8fa3a8; font-size:14px; margin:2px 0 12px}
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--stroke);border-radius:999px;background:var(--chip)}
+.chip .k{opacity:.65}
+.docs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.doc{display:inline-flex;padding:8px 12px;border-radius:999px;border:1px solid var(--stroke);background:var(--chip)}
+.doc small{opacity:.7;margin-left:6px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.switch{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px dashed var(--stroke);border-radius:999px;opacity:.9}
+.legend{margin-top:8px; font-size:13px; color:#8fa3a8}
+@media (max-width:720px){
+  .node{width:calc(var(--node) * 0.8); height:calc(var(--node) * 0.8)}
+  #stage{height:64vh; min-height:480px}
+}
+
+.frame{
+  position:relative;
+  height:min(82vh, calc(100dvh - 88px));
+  min-height:600px;
+  margin:12px 20px 20px;
+  border:1px solid rgba(255,255,255,.26);   /* più chiaro */
+  border-radius:16px;
+  background:
+    radial-gradient(60% 70% at 50% 12%, rgba(56,189,248,.12) 0%, transparent 62%),
+    radial-gradient(40% 50% at 50% 82%, rgba(56,189,248,.08) 0%, transparent 60%);
+}
+#world{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%) scale(1);
+  transform-origin:50% 50%;
+  will-change:transform;
+}
+#stage{ position:absolute; inset:0; overflow:hidden; touch-action:none; }
+
+/* Logo palazzo (simmetrico, glow) */
+#hubIcon{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:160px; height:160px; pointer-events:none; filter:drop-shadow(0 0 22px rgba(56,189,248,.45)); }
+#hubIcon::before{
+  content:""; position:absolute; inset:0;
+  background:
+    radial-gradient(60% 60% at 50% 50%, rgba(56,189,248,.22), transparent 60%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="%23e6f7ff" stroke="%2300b3ff" stroke-width="12" stroke-linejoin="round"><path d="M32 196 L256 80 L480 196 Z"/><rect x="72"  y="220" width="64" height="200"/><rect x="168" y="220" width="64" height="200"/><rect x="264" y="220" width="64" height="200"/><rect x="360" y="220" width="64" height="200"/><rect x="48" y="424" width="416" height="24"/></svg>') center/72% no-repeat;
+  opacity:.96;
+}
+.node{width:200px;height:140px;padding:16px;border-radius:18px;background:rgba(15,32,36,.76);border:1px solid rgba(255,255,255,.10);box-shadow:0 6px 18px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.06) inset;display:flex;align-items:center;justify-content:center;text-align:center;}
+.node .tag{display:none!important;}
+.node .label{font-weight:800;line-height:1.16;letter-spacing:.2px;font-size:clamp(15px,1.25vw,20px);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance;}
+:root[data-lines='off'] #links{opacity:0;transition:.3s}
+:root[data-lines='on']  #links{opacity:1;transition:.3s}
+
+/* Pagina fissa + cornice più chiara */
+html,body{height:100%; overscroll-behavior:none;}
+body{overflow:hidden;}
+.frame{
+  position:relative; margin:12px 20px 20px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:16px;
+  background: radial-gradient(60% 70% at 50% 14%, rgba(56,189,248,.10) 0%, transparent 60%);
+}
+
+/* Shell zoomabile */
+#stage{position:absolute; inset:0; overflow:hidden; touch-action:none;}
+#world{
+  position:absolute; left:50%; top:50%;
+  transform: translate(-50%,-50%) scale(1);
+  transform-origin:50% 50%; will-change:transform;
+}
+
+/* Logo palazzo (simmetrico, senza riquadro) */
+#hubIcon{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:168px; height:168px; pointer-events:none;
+  filter: drop-shadow(0 0 26px rgba(56,189,248,.45));
+}
+#hubIcon::before{
+  content:""; position:absolute; inset:0;
+  background:
+    radial-gradient(60% 60% at 50% 50%, rgba(56,189,248,.24), transparent 60%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="%23e6f7ff" stroke="%2300b3ff" stroke-width="12"><path d="M24 196h464L256 72 24 196zM64 224h64v208H64V224zm96 0h64v208h-64V224zm128 0h64v208h-64V224zm96 0h64v208h-64V224zM48 448h416v24H48z"/></svg>') center/72% no-repeat;
+  opacity:.96;
+}
+
+/* Tile: retroilluminazione leggera + incremento su match */
+:root{ --glow-off:12px; --glow-on:28px; }
+.node{
+  width:200px; height:140px; padding:16px; border-radius:18px;
+  background: rgba(18,40,44,.78);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.28),
+    0 0 0 1px rgba(255,255,255,.06) inset,
+    0 0 var(--glow-off) rgba(56,189,248,.20);
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  transition: box-shadow .25s ease, border-color .25s ease, background .25s ease;
+}
+.node .tag{display:none!important;}
+.node .label{
+  font-weight:800; line-height:1.16; letter-spacing:.2px;
+  font-size:clamp(15px,1.25vw,20px);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; text-wrap:balance;
+}
+/* Evidenza quando la ricerca trova un match */
+.node.hit{
+  border-color: rgba(56,189,248,.38);
+  box-shadow:
+    0 16px 34px rgba(0,0,0,.32),
+    0 0 0 1px rgba(255,255,255,.08) inset,
+    0 0 var(--glow-on) rgba(56,189,248,.45);
+}
+
+/* Linee ON/OFF */
+:root[data-lines='off'] #links{opacity:0; transition:.3s}
+:root[data-lines='on']  #links{opacity:1; transition:.3s}
+
+/* tema esistente */
+:root { --ink:#e7fbf5; --chip:rgba(15,32,36,.84); --stroke:rgba(255,255,255,.12); }
+
+/* header "slot": colore come prima (chip scuro) */
+.sheet-head{
+  background:var(--chip);
+  color:var(--ink);
+  border:1px solid var(--stroke);
+  border-radius:14px 14px 0 0;
+  padding:12px 14px; display:flex; gap:12px; align-items:center;
+  box-shadow:0 10px 24px rgba(0,0,0,.28);
+}
+.sheet-head .ttl{margin:0; font:800 20px/1.2 system-ui;}
+.sheet-head .actions{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;}
+.min-links{display:flex; gap:6px; flex-wrap:wrap;}
+
+/* chip navigazione ministeri */
+.chip.nav{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; border:1px dashed var(--stroke);
+  border-radius:999px; background:rgba(15,32,36,.62); color:var(--ink); opacity:.92;
+}
+
+/* body: contorno uguale, scheda "bianca" opzionale */
+.sheet-body{
+  border:1px solid var(--stroke); border-top:0;
+  border-radius:0 0 14px 14px;
+  background:#0f2024ee;  /* se preferisci bianca: #fff e color:#0b1416 */
+  color:var(--ink); padding:16px;
+  box-shadow:0 20px 48px rgba(0,0,0,.35);
+}
+
+/* sezione SCHEDA */
+.facts{margin:10px 0 12px;}
+.facts img{width:100%; height:auto; border-radius:12px; display:block;}
+
+/* Scheda ministeriale integrata nella modal */
+#card .facts{ margin:12px 0 10px; padding:0; }
+#card .facts img{
+  display:block; width:100%; height:auto;
+  border:1px solid var(--stroke); border-radius:12px;
+  background:#0f2024; /* tema esistente, NO verde */
+}
+
+/* v2.6.1: card sempre leggibile dentro modal */
+#card{ max-height:88vh; overflow:auto; }
+#card .facts{ margin:12px 0 10px; }
+#card .facts img{
+  display:block;
+  width:100%; height:auto;
+  max-height:62vh;          /* evita tagli su iPad */
+  object-fit:contain;
+  border:1px solid var(--stroke);
+  border-radius:12px;
+  background:#0f2024;       /* colore tema esistente */
+}
+
+/* v2.6.3: CSS aggiuntivi per card e nav */
+#card .facts img{ display:block; max-width:100%; max-height:62vh; margin:8px auto 0; object-fit:contain; border-radius:12px; }
+.min-links{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 0; }
+.chip.nav{ opacity:.95; }
+
+/* v2.7.1 — solo-modal, nascondi legacy ovunque */
+#sheet, body > .facts { display: none !important; }
+#card{ max-height:88vh; overflow:auto; }
+#card .facts{ margin:12px 0 10px; }
+#card .facts img{ display:block; width:100%; height:auto; max-height:62vh; object-fit:contain; }
+
+/* Modal header verde sito */
+.dms-head{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:.75rem;
+  padding:.65rem .9rem;
+  background:#0F7A4C;          /* verde scuro sito */
+  color:#fff;
+  border-radius:10px 10px 0 0;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.dms-head .title{
+  margin:0; text-align:center; font-weight:700; font-size:1rem; letter-spacing:.2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.dms-head .btn{
+  background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.2);
+  padding:.45rem .65rem; border-radius:8px; font-weight:600; cursor:pointer;
+  backdrop-filter:saturate(120%) blur(2px);
+}
+.dms-head .btn:hover{ background:rgba(255,255,255,.18); }
+.spot-actions{ display:flex; gap:.4rem; }
+
+/* CSS header modal come richiesto nelle istruzioni */
+/* overlay centrato */
+#modalOverlay {
+  position: fixed; inset: 0;
+  background: rgba(6,16,14,.55);
+  backdrop-filter: blur(2px);
+  display: none; z-index: 1100;
+  align-items: center; justify-content: center;
+}
+#modalOverlay.is-open { display: flex; }
+body.modal-open { overflow: hidden; }
+
+/* card del modal */
+#modalCard {
+  width: min(1080px, 92vw);
+  max-height: 86vh;
+  background: #0b1a20; /* scuro del sito */
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0,0,0,.5);
+}
+
+/* header verde in alto, NON sticky/fixed */
+#modalHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px; align-items: center;
+  height: 56px; padding: 8px 12px;
+  background: #0F7A4C; color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  position: static; /* importante */
+}
+
+/* assicurati di rimuovere/annullare queste regole se presenti */
+#modalHeader.sticky, #modalHeader.fixed { position: static !important; }
+#modalHeader { bottom: auto !important; top: auto !important; }
+
+#backToMap{ background:rgba(255,255,255,.12); border:0; padding:8px 12px; border-radius:8px; color:#fff; }
+#modalTitle{ text-align:center; font-weight:600; letter-spacing:.2px; }
+#spotBtns a{ display:inline-block; margin-left:8px; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,.12); color:#fff; text-decoration:none; }
+
+/* CSS anti-interferenze per bottoni SPOT */
+#modalHeader, #modalHeader * { pointer-events: auto; }
+.btn-spot { cursor: pointer; display: inline-block; margin-left: .5rem; }
+
+/* livelli e dimensioni coerenti */
+#modalOverlay { z-index: 1000; }
+#modalCard { z-index: 1100; max-width: min(1140px, 92vw); }
+#modalCard img { max-width: 100%; height: auto; }
+
+/* Modal centrato + header verde del sito */
+#modalOverlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,.6);z-index:1100;}
+#modalOverlay.is-open{display:flex;}
+#modalCard{max-width:min(1140px,92vw);width:100%;border-radius:12px;overflow:hidden;}
+#modalHeader{background:#0F7A4C !important;color:#fff;}
+#spotBtns .btn{margin-left:.5rem;margin-top:.25rem}
+.btn.btn-spot{display:inline-block;margin-left:.5rem;padding:.4rem .7rem;border-radius:.5rem;background:#0F7A4C;color:#fff;text-decoration:none}
+
+/* Modal hidden by default: non deve prendere i click */
+#modalBg, #modalOverlay, #modalCard, .modal-bg, .modalCard, .modal-card {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* Solo quando il root ha la classe is-open il modal "vive" */
+#modalRoot.is-open #modalBg,
+#modalRoot.is-open #modalOverlay,
+#modalRoot.is-open #modalCard,
+#modalRoot.is-open .modal-bg,
+#modalRoot.is-open .modalCard,
+#modalRoot.is-open .modal-card {
+  display: block !important;
+  pointer-events: auto !important;
+  z-index: 1100;
+}
+
+/* La mappa deve restare cliccabile */
+#stage, #mapCanvas, #graph, .map-stage {
+  position: relative;
+  z-index: 10;
+}
+
+/* Modal: disattivo quando chiuso */
+#modalRoot{display:none;pointer-events:none}
+#modalRoot.is-open{display:block;pointer-events:auto}
+#mapWrap,#graph{position:relative;z-index:10}
+
+/* Disabilita anteprima/drag di Safari (long-press) */
+#mapWrap, #graph, .node, .node *{
+  -webkit-touch-callout:none;  /* stop anteprima */
+  -webkit-user-select:none; user-select:none;
+  -webkit-user-drag:none;
+  touch-action:manipulation;
+}
+
+/* Solo i nodi devono ricevere i tap */
+#mapWrap *{ pointer-events:none; }
+.node, .node *{ pointer-events:auto; cursor:pointer; }
+</style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="topnav">
-    <a href="/dms-gemello-news/landing/home.html">Home</a>
-    <a href="/dms-gemello-news/landing/mappa-ministeri.html" class="active">Mappa</a>
-    <a href="/dms-news-prova/landing/spot.html">Spot</a>
-  </nav>
-
-  <!-- Container principale -->
-  <div class="main-container">
-    <!-- Pannello comandi -->
-    <div class="controls-panel">
-      <div class="control-group">
-        <input type="checkbox" id="autoRotate" checked>
-        <label for="autoRotate">Auto-rotate</label>
-      </div>
-      
-      <div class="control-group">
-        <input type="checkbox" id="showLines" checked>
-        <label for="showLines">Linee</label>
-      </div>
-      
-      <input type="text" class="search-input" id="searchInput" placeholder="Cerca ministero...">
-      
-      <div class="page-title">Mappa Ministeri (sandbox)</div>
+  <div class="nav">
+    <a class="btn" href="/dms-gemello-news/landing/home.html" target="_top">Home</a>
+    <span class="btn is-active">Mappa</span>
+    <a class="btn" href="/dms-gemello-news/landing/spot.html" target="_top">Spot</a>
+    <div class="controls">
+      <label class="switch"><input id="btn-auto" type="checkbox" checked> Auto-rotate</label>
+      <label class="switch"><input id="btn-lines" type="checkbox" checked> Linee</label>
+      <input id="q" placeholder="Cerca ministero…" style="margin-left:8px;padding:8px 12px;border-radius:999px;border:1px solid var(--stroke);background:var(--chip);color:var(--ink);">
     </div>
+    <div class="title">Mappa Ministeri (sandbox)</div>
+  </div>
 
-    <!-- Container mappa -->
-    <div id="mapContainer" class="zoom-100">
-      <!-- Logo centrale fisso -->
-      <div id="hubIcon" aria-hidden="true"></div>
-
-      <!-- Linee radiali -->
-      <div id="spokes"></div>
-
-      <!-- Anello interno (8 nodi) -->
-      <div id="ring-inner">
-        <button class="node" data-slug="agid" aria-label="AgID">
-          AgID
-        </button>
-        <button class="node" data-slug="mef" aria-label="MEF - Economia e Finanze">
-          MEF · Economia<br>e Finanze
-        </button>
-        <button class="node" data-slug="interno" aria-label="Ministero dell'Interno">
-          Ministero<br>dell'Interno
-        </button>
-        <button class="node" data-slug="salute" aria-label="Ministero della Salute">
-          Ministero<br>della Salute
-        </button>
-        <button class="node" data-slug="turismo" aria-label="Ministero del Turismo">
-          Ministero<br>del Turismo
-        </button>
-        <button class="node" data-slug="lavoro" aria-label="Ministero del Lavoro">
-          Ministero<br>del Lavoro
-        </button>
-        <button class="node" data-slug="mit" aria-label="MIT - Infrastrutture e Trasporti">
-          MIT · Infrastrutture<br>e Trasporti
-        </button>
-        <button class="node" data-slug="mim" aria-label="MIM - Istruzione e Merito">
-          MIM · Istruzione<br>e Merito
-        </button>
+  <div class="wrap">
+    <main id="map">
+      <div id="viewport" class="frame">
+        <div id="stage" aria-label="Mappa radiale interattiva">
+          <canvas id="links"></canvas>
+          <div id="world"><!-- qui append .node --></div>
+          <div id="hubIcon" aria-hidden="true"></div>
+        </div>
       </div>
+    </main>
 
-      <!-- Anello esterno (8 nodi) -->
-      <div id="ring-outer">
-        <button class="node" data-slug="mimit" aria-label="MIMIT - Imprese e Made in Italy">
-          MIMIT · Imprese<br>e Made in Italy
-        </button>
-        <button class="node" data-slug="mase" aria-label="MASE - Ambiente e Sicurezza">
-          MASE · Ambiente<br>e Sicurezza
-        </button>
-        <button class="node" data-slug="masaf" aria-label="MASAF - Agricoltura">
-          MASAF ·<br>Agricoltura
-        </button>
-        <button class="node" data-slug="maeci" aria-label="MAECI - Affari Esteri">
-          MAECI ·<br>Affari Esteri
-        </button>
-        <button class="node" data-slug="mic" aria-label="MIC - Cultura">
-          MIC ·<br>Cultura
-        </button>
-        <button class="node" data-slug="ae" aria-label="AE - Agenzia Entrate">
-          AE · Agenzia<br>Entrate
-        </button>
-        <button class="node" data-slug="adm" aria-label="ADM - Agenzia Dogane">
-          ADM · Agenzia<br>Dogane
-        </button>
-        <button class="node" data-slug="pagopa" aria-label="PagoPA S.p.A.">
-          PagoPA S.p.A.
-        </button>
-      </div>
-
-      <!-- Logo centrale -->
-      <div id="hubIcon">
-        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="buildingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#e0e0e0;stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          
-          <!-- Timpano triangolare -->
-          <polygon points="30,80 100,30 170,80" fill="url(#buildingGrad)" stroke="#d4af37" stroke-width="3"/>
-          
-          <!-- Colonne (4 colonne con distanze uniformi) -->
-          <rect x="45" y="80" width="18" height="90" fill="url(#buildingGrad)" stroke="#d4af37" stroke-width="2"/>
-          <rect x="73" y="80" width="18" height="90" fill="url(#buildingGrad)" stroke="#d4af37" stroke-width="2"/>
-          <rect x="109" y="80" width="18" height="90" fill="url(#buildingGrad)" stroke="#d4af37" stroke-width="2"/>
-          <rect x="137" y="80" width="18" height="90" fill="url(#buildingGrad)" stroke="#d4af37" stroke-width="2"/>
-          
-          <!-- Base superiore -->
-          <rect x="25" y="75" width="150" height="10" fill="url(#buildingGrad)" stroke="#d4af37" stroke-width="2"/>
-          
-          <!-- Gradini base -->
-          <rect x="20" y="170" width="160" height="8" fill="url(#buildingGrad)" stroke="#d4af37" stroke-width="2"/>
-          <rect x="15" y="178" width="170" height="8" fill="url(#buildingGrad)" stroke="#d4af37" stroke-width="2"/>
-        </svg>
-      </div>
-
-      <!-- Controlli zoom -->
-      <div class="zoom-controls">
-        <button class="zoom-btn" data-zoom="80">0.8×</button>
-        <button class="zoom-btn active" data-zoom="100">1.0×</button>
-        <button class="zoom-btn" data-zoom="120">1.2×</button>
-      </div>
+    <div id="sheet" class="panel" hidden>
+      <h3 class="ttl"></h3>
+      <p class="meta"></p>
+      <div class="chips"></div>
+      <h4 style="margin:16px 0 6px">Documenti</h4>
+      <div class="docs"></div>
+      <p class="legend">Suggerimento: i link "Apri su Spot" evidenziano la card nella libreria; "Apri PDF" apre direttamente il documento (eventuale pagina prefissata).</p>
     </div>
   </div>
 
   <!-- Modal -->
-  <div id="modal" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card">
-      <header class="modal-header">
-        <button class="modal-back" id="modalBack" aria-label="Torna alla mappa">← Torna alla mappa</button>
-        <h2 class="modal-title" id="modalTitle"></h2>
-        <a class="modal-spot" id="modalSpot" href="#" target="_blank">Apri in SPOT</a>
-      </header>
-      <div class="modal-body" id="modalBody"></div>
+  <div id="modalOverlay" class="modal-overlay">
+    <div id="modalCard">
+      <div id="modalHeader" class="modal-header">
+        <button id="backToMap" class="btn-back">← Torna alla mappa</button>
+        <div id="modalTitle" class="modal-title">-</div>
+        <div id="spotBtns" class="spot-btns"></div>
+      </div>
+      <div class="modal-body">
+        <button id="prev" class="nav prev">◀</button>
+        <img id="modalImage" alt="" />
+        <button id="next" class="nav next">▶</button>
+      </div>
     </div>
   </div>
 
-  <script>
-    // Dati ministeri inline
-    const MINISTERI_DATA = {
-      agid: { 
-        title: "AgID", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/agid.png", alt: "Piattaforma DMS Modulare Cloud-based" }] 
-      },
-      mef: { 
-        title: "MEF - Economia e Finanze", 
-        cards: [
-          { img: "/dms-gemello-news/assets/doc/mef.png", alt: "Ruolo strategico del DMS per il Ministero dell'Economia e delle Finanze" },
-          { img: "/dms-gemello-news/assets/doc/mef2.png", alt: "Il riequilibrio fiscale e ambientale possibile" }
-        ] 
-      },
-      interno: { 
-        title: "Ministero dell'Interno", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/interno.png", alt: "Ruolo strategico del DMS per il Ministero dell'Interno" }] 
-      },
-      salute: { 
-        title: "Ministero della Salute", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/salute.png", alt: "Ruolo strategico del Ministero della Salute nel Sistema DMS" }] 
-      },
-      turismo: { 
-        title: "Ministero del Turismo", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/turismo.png", alt: "Ruolo strategico del DMS per il Ministero del Turismo" }] 
-      },
-      lavoro: { 
-        title: "Ministero del Lavoro", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/lavoro.png", alt: "Ruolo strategico del DMS per il Ministero del Lavoro" }] 
-      },
-      mit: { 
-        title: "MIT - Infrastrutture e Trasporti", 
-        cards: [
-          { img: "/dms-gemello-news/assets/doc/mit1.png", alt: "Ruolo strategico del DMS per il MIT - Logistica e mobilità" },
-          { img: "/dms-gemello-news/assets/doc/mit2.png", alt: "Ruolo strategico del DMS per il MIT - Programmazione e digitalizzazione" }
-        ] 
-      },
-      mim: { 
-        title: "MIM - Istruzione e Merito", 
-        cards: [
-          { img: "/dms-gemello-news/assets/doc/mim1.png", alt: "Ruolo strategico del DMS per il MIM - Formazione professionale e digitalizzazione" },
-          { img: "/dms-gemello-news/assets/doc/mim2.png", alt: "Ruolo strategico del MIM nel sistema DMS - Formazione, Inclusione e Innovazione" }
-        ] 
-      },
-      mimit: { 
-        title: "MIMIT - Imprese e Made in Italy", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/mimit.png", alt: "Ruolo strategico del DMS per il MIMIT - Normativa, Commercio e Digitalizzazione" }] 
-      },
-      mase: { 
-        title: "MASE - Ambiente e Sicurezza", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/mase.png", alt: "Ruolo strategico del DMS per il MASE - Eco Carbon Credit e Sostenibilità" }] 
-      },
-      masaf: { 
-        title: "MASAF - Agricoltura", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/masaf.png", alt: "Ruolo strategico del DMS per il MASAF - Agricoltura, Filiera corta e Foreste" }] 
-      },
-      maeci: { 
-        title: "MAECI - Affari Esteri", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/maeci.jpg", alt: "MAECI" }] 
-      },
-      mic: { 
-        title: "MIC - Cultura", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/mic.png", alt: "Ruolo strategico del MIC nel sistema DMS - Hub centri storici e promozione eventi" }] 
-      },
-      ae: { 
-        title: "AE - Agenzia Entrate", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/ae.png", alt: "Il riequilibrio fiscale e ambientale possibile" }] 
-      },
-      adm: { 
-        title: "ADM - Agenzia Dogane", 
-        cards: [{ img: "/dms-gemello-news/assets/doc/adm.png", alt: "Carbon Credit DMS - Infrastruttura europea di tassazione" }] 
-      },
-      pagopa: { 
-        title: "PagoPA S.p.A.", 
-        cards: [
-          { img: "/dms-gemello-news/assets/doc/pagopa1.png", alt: "Rete istituzionale del Digital Market System" },
-          { img: "/dms-gemello-news/assets/doc/pagopa2.png", alt: "Gemello Digitale del Commercio" }
-        ] 
-      },
-      pcm: { 
-        title: "Presidenza del Consiglio dei Ministri", 
-        cards: [
-          { img: "/dms-gemello-news/assets/doc/pcm/pcm-1.png", alt: "PCM - Presidenza del Consiglio dei Ministri" },
-          { img: "/dms-gemello-news/assets/doc/pcm/pcm-2.png", alt: "PCM - Struttura organizzativa" },
-          { img: "/dms-gemello-news/assets/doc/pcm/pcm-3.png", alt: "PCM - Competenze e ruoli" }
-        ] 
-      }
+  <!-- Fallback modal esistente -->
+  <div id="modal" aria-hidden="true">
+    <div id="card" class="sheet">
+      <div class="modal-head dms-head" id="dmsHead">
+        <button class="btn back" id="btnBackToMap">← Torna alla mappa</button>
+        <h3 class="title" id="modalTitle">—</h3>
+        <div class="spot-actions" id="spotActions">
+          <div id="spotBtns" class="spot-btns"></div>
+        </div>
+      </div>
+
+      <div id="modalBody" class="dms-modal-body"><!-- qui inietti l'IMG --></div>
+    </div>
+  </div>
+
+<script>window.BUILD='qa12'</script>
+<script>
+/* HOTFIX v2.4: viewport/stage/world + pinch-zoom + glow ricerca + deeplink */
+// Fallback inline completo con 16 ministeri
+window.DOC_MAP_FALLBACK = [
+  {id:'mef', nome:'MEF · Economia e Finanze', ring:1, tag:'Ministero'},
+  {id:'interno', nome:'Ministero dell\'Interno', ring:1, tag:'Ministero'},
+  {id:'mimit', nome:'MIMIT · Imprese e Made in Italy', ring:1, tag:'Ministero'},
+  {id:'mase', nome:'MASE · Ambiente e Sicurezza Energetica', ring:1, tag:'Ministero'},
+  {id:'mit', nome:'MIT · Infrastrutture e Trasporti', ring:1, tag:'Ministero'},
+  {id:'salute', nome:'Ministero della Salute', ring:1, tag:'Ministero'},
+  {id:'mic', nome:'MIC · Cultura', ring:1, tag:'Ministero'},
+  {id:'turismo', nome:'Ministero del Turismo', ring:1, tag:'Ministero'},
+  {id:'masaf', nome:'MASAF · Agricoltura', ring:1, tag:'Ministero'},
+  {id:'mim', nome:'MIM · Istruzione e Merito', ring:1, tag:'Ministero'},
+  {id:'lavoro', nome:'Ministero del Lavoro', ring:1, tag:'Ministero'},
+  {id:'maeci', nome:'MAECI · Affari Esteri', ring:1, tag:'Ministero'},
+  {id:'agid', nome:'AgID', ring:2, tag:'Ente'},
+  {id:'pagopa', nome:'PagoPA S.p.A.', ring:2, tag:'Ente'},
+  {id:'ae', nome:'AE · Agenzia Entrate', ring:2, tag:'Ente'},
+  {id:'adm', nome:'ADM · Agenzia Dogane', ring:2, tag:'Ente'}
+];
+
+let DATA = [];
+let cx=0, cy=0, Rx1=0, Ry1=0, Rx2=0, Ry2=0;
+let phase=0, speed=0.0016, rotating=true;
+const SHOW = ['mef','interno','mimit','mase','mit','salute','maeci','agid','pagopa','ae','adm','mic','turismo','masaf','mim','lavoro'];
+
+// STEP 3: Ordine/whitelist ministeri mostrati
+window.SHOW = ["mef","interno","mimit","mase","mit","salute","mic","turismo","masaf","mim","lavoro","maeci","agid","pagopa","ae","adm"];
+
+// selettori viewport/stage/world
+const viewport=document.getElementById('viewport');
+const stage=document.getElementById('stage');
+const world=document.getElementById('world');
+const links=document.getElementById('links');
+
+// trasformazioni globali per pinch-zoom
+let scale=1, panX=0, panY=0, lastDist=null;
+function apply(){
+  // mantieni SEMPRE il baseline di centratura
+  world.style.transform = `translate(-50%,-50%) translate(${panX}px,${panY}px) scale(${scale})`;
+}
+
+// layout: centro calcolato sempre sullo stage
+function layout(){
+  const rect = stage.getBoundingClientRect();
+  cx = rect.width/2; cy = rect.height/2;
+  const S = Math.min(rect.width, rect.height);
+  Rx1 = Math.max(60, S*0.36);
+  Ry1 = Math.max(40, rect.height*0.28);
+  Rx2 = Math.max(80, S*0.46);
+  Ry2 = Math.max(50, rect.height*0.36);
+  links.width = rect.width; links.height = rect.height;
+  redraw();
+}
+
+// posiziona i nodi RELATIVI al centro (cx,cy) perché #world è già centrato
+function place(el, xStage, yStage){
+  el.style.left = (xStage - cx) + 'px';   // sottraggo il centro
+  el.style.top  = (yStage - cy) + 'px';
+  el.style.transform = 'translate(-50%,-50%)';
+}
+function ellipseXY(rx,ry,a){ return [cx + rx*Math.cos(a), cy + ry*Math.sin(a)]; }
+function jitter(i){ return (i%2 ? +0.06 : -0.06); }
+
+/* i tile DEVONO nascere in #world */
+function mkNode(m){
+  const el=document.createElement('a');
+  el.className='node';
+  el.dataset.id=m.id;
+  el.dataset.slug=m.id;  // per iPad click handler
+  el.href=`#${m.id}`;
+  el.innerHTML=`<div class="label">${m.nome}</div>`;
+  return el;
+}
+
+function distribute(items, rx, ry, klass){
+  const n = items.length || 1;
+  items.forEach((m,i)=>{
+    const a = (i/n)*2*Math.PI + phase + jitter(i) - Math.PI/2;
+    const [x,y] = ellipseXY(rx, ry, a);
+    let el = document.querySelector(`.node[data-id="${m.id}"]`);
+    if(!el){ el = mkNode(m); world.appendChild(el); }
+    el.classList.add(klass);
+    place(el, x, y);
+  });
+}
+
+// linee: ricalcola endpoint sommando il centro
+function drawLines(all){
+  const ctx = links.getContext('2d');
+  ctx.clearRect(0,0,links.width,links.height);
+  if(document.documentElement.dataset.lines==='off') return;
+  ctx.strokeStyle = 'rgba(134,239,172,.22)';
+  ctx.lineWidth = 1.2;
+  all.forEach(m=>{
+    const el = document.querySelector(`.node[data-id="${m.id}"]`);
+    if(!el) return;
+    const x = cx + parseFloat(el.style.left || 0);
+    const y = cy + parseFloat(el.style.top  || 0);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.stroke();
+  });
+}
+
+function redraw(){
+  if(!DATA.length) return;
+  const ALL = DATA.filter(m => SHOW.includes(m.id));
+  const r1 = ALL.filter(d => (d.ring||1)==1);
+  const r2 = ALL.filter(d => (d.ring||2)==2);
+  distribute(r1, Rx1, Ry1, 'r1');
+  distribute(r2, Rx2, Ry2, 'r2');
+  drawLines(ALL);
+}
+
+/* animazione */
+let raf;
+function tick(){ if(rotating) phase += speed; redraw(); raf = requestAnimationFrame(tick); }
+
+// toggle linee
+document.documentElement.dataset.lines='on';
+document.getElementById('btn-lines')?.addEventListener('change',e=>{
+  document.documentElement.dataset.lines=e.target.checked?'on':'off';
+  redraw();
+});
+
+// ricerca soft con glow interattivo
+const q=document.getElementById('q');
+q?.addEventListener('input',()=>{
+  const v=q.value.trim().toLowerCase();
+  document.querySelectorAll('.node').forEach(n=>{
+    if(n.classList.contains('center'))return;
+    const hit=n.querySelector('.label').textContent.toLowerCase().includes(v);
+    n.classList.toggle('hit', v && hit);
+    n.style.opacity=v?(hit?1:.18):1;
+  });
+});
+q?.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const v=q.value.trim().toLowerCase();
+    const hit=[...document.querySelectorAll('.node')].find(n=>
+      !n.classList.contains('center') && 
+      n.querySelector('.label').textContent.toLowerCase().includes(v)
+    );
+    if(hit){
+      const m=DATA.find(x=>x.id===hit.dataset.id);
+      if(m)openFull(m);
+    }
+  }
+});
+
+// pinch-zoom + pan (iPad/desktop)
+let isDragging=false, startX=0, startY=0;
+
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.max(0.5, Math.min(2.5, scale * delta));
+  apply();
+}, {passive:false});
+
+stage.addEventListener('mousedown', e => {
+  isDragging=true; startX=e.clientX-panX; startY=e.clientY-panY;
+});
+stage.addEventListener('mousemove', e => {
+  if(!isDragging) return;
+  panX=e.clientX-startX; panY=e.clientY-startY; apply();
+});
+stage.addEventListener('mouseup', () => isDragging=false);
+
+// touch pinch-zoom
+stage.addEventListener('touchstart', e => {
+  if(e.touches.length===2){
+    const [t1,t2]=e.touches;
+    lastDist=Math.hypot(t1.clientX-t2.clientX, t1.clientY-t2.clientY);
+  } else if(e.touches.length===1){
+    isDragging=true;
+    startX=e.touches[0].clientX-panX; startY=e.touches[0].clientY-panY;
+  }
+});
+stage.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if(e.touches.length===2 && lastDist){
+    const [t1,t2]=e.touches;
+    const dist=Math.hypot(t1.clientX-t2.clientX, t1.clientY-t2.clientY);
+    scale=Math.max(0.5, Math.min(2.5, scale*(dist/lastDist)));
+    lastDist=dist; apply();
+  } else if(e.touches.length===1 && isDragging){
+    panX=e.touches[0].clientX-startX; panY=e.touches[0].clientY-startY; apply();
+  }
+}, {passive:false});
+stage.addEventListener('touchend', () => {isDragging=false; lastDist=null;});
+
+// deep-link
+document.addEventListener('DOMContentLoaded',()=>{
+  const id=new URLSearchParams(location.search).get('id');
+  if(id){
+    const m=DATA.find(x=>x.id===id);
+    if(m)setTimeout(()=>openFull(m),100);
+  }
+});
+
+/* bootstrap */
+async function bootstrap(){
+  // Uso direttamente il fallback inline sicuro
+  DATA = window.DOC_MAP_FALLBACK || [];
+  window.DATA = DATA; // rendi accessibile globalmente
+  layout(); cancelAnimationFrame(raf); tick();
+}
+document.addEventListener('DOMContentLoaded', bootstrap);
+window.addEventListener('resize', layout);
+
+// toggle Auto-rotate
+document.getElementById('btn-auto')?.addEventListener('change', e => {
+  rotating = e.target.checked;
+});
+
+// --- Scheda fullscreen ---
+// --- NAV estesa in ordine preferito ---
+const NAV_IDS = [
+  'mef','interno','mimit','mase','mit','salute',
+  'maeci','agid','pagopa','ae','adm',
+  'mic','turismo','masaf','mim','lavoro'
+];
+
+const modal   = document.getElementById('modal');
+const head    = document.getElementById('sheetHead');
+const body    = document.getElementById('sheetBody');
+const ttl     = head.querySelector('.ttl');
+const actions = head.querySelector('.actions');
+const navMin  = document.getElementById('minLinks');
+
+const imgHero = body.querySelector('.hero');
+const meta    = body.querySelector('.meta');
+const bullets = body.querySelector('.bullets');
+const docsBox = body.querySelector('.docs');
+
+const factsWrap = document.getElementById('factsWrap');
+const factsImg  = document.getElementById('factsImg');
+
+// Spostamento sicuro (se l'HTML avesse #factsWrap fuori)
+const cardEl = document.getElementById('card');
+if (cardEl && factsWrap && factsWrap.parentElement !== cardEl) {
+  cardEl.appendChild(factsWrap);
+}
+
+document.getElementById('close').onclick = () => modal.style.display = 'none';
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') modal.style.display='none'; });
+
+// Loader immagine 1:1 (senza fallback errati)
+function loadCardFor(id){
+  if(!factsWrap || !factsImg){ return; }
+  const exts = ['png','jpg','webp'];
+  let i = 0, loaded = false;
+  function tryNext(){
+    if(i>=exts.length){
+      factsWrap.hidden = true; factsImg.removeAttribute('src'); return;
+    }
+    const src = `/dms-gemello-news/landing/cards/${id}.${exts[i++]}`;
+    const probe = new Image();
+    probe.onload = ()=>{ factsImg.src = src; factsWrap.hidden = false; };
+    probe.onerror = tryNext;
+    probe.src = src + `?t=${Date.now()}`; // cache-buster
+  }
+  tryNext();
+}
+
+// nav chips dinamiche
+function buildNavMin(currentId){
+  const bar = document.getElementById('minLinks');
+  if(!bar){ return; }
+  bar.innerHTML = '';
+  SHOW.forEach(id=>{
+    const btn = document.createElement('button');
+    btn.className = 'chip nav';
+    btn.textContent = id.toUpperCase();
+    if(id===currentId){ btn.disabled = true; }
+    btn.onclick = ()=>{
+      const m = (window.DATA||[]).find(x=>x.id===id);
+      if(m) openFull(m);
     };
+    bar.appendChild(btn);
+  });
+}
 
-    // Elementi DOM
-    const ringInner = document.getElementById('ring-inner');
-    const ringOuter = document.getElementById('ring-outer');
-    const spokes = document.getElementById('spokes');
-    const modal = document.getElementById('modal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    const modalBack = document.getElementById('modalBack');
-    const modalSpot = document.getElementById('modalSpot');
-    const autoRotateCheck = document.getElementById('autoRotate');
-    const showLinesCheck = document.getElementById('showLines');
-    const searchInput = document.getElementById('searchInput');
-    const mapContainer = document.getElementById('mapContainer');
-    const nodesInner = document.querySelectorAll('#ring-inner .node');
-    const nodesOuter = document.querySelectorAll('#ring-outer .node');
-    const allNodes = document.querySelectorAll('.node');
+/* ===== MAP v2.7.1 — hard reset: solo modal, kill legacy, nav stabile ===== */
+(function(){
+  const IDS=['mef','interno','mimit','mase','mit','salute','mic','turismo','masaf','mim','lavoro','maeci','agid','pagopa','ae','adm'];
 
-    // Variabili globali
-    let rotationAngle = 0;
-    let rotationInterval = null;
-    let currentZoom = 100;
-    let animationId = null;
+  function $id(x){return document.getElementById(x);}
+  function ready(){return Array.isArray(window.DATA)&&typeof window.openFull==='function'&&$id('card');}
 
-    // iPad: disabilita preview e long-press
-    document.addEventListener('contextmenu', e => e.preventDefault(), { passive: false });
-    document.addEventListener('selectstart', e => e.preventDefault(), { passive: false });
-
-    // Inizializzazione
-    function init() {
-      setupNodes();
-      setupSpokes();
-      setupEventListeners();
-      handleInitialHash();
-      startAutoRotation();
+  function ensureFacts(){
+    const card=$id('card'); if(!card) return null;
+    let wrap=$id('factsWrap'), img=$id('factsImg');
+    if(!wrap){
+      wrap=document.createElement('div'); wrap.id='factsWrap'; wrap.className='facts';
+      img=document.createElement('img'); img.id='factsImg'; img.alt=''; wrap.appendChild(img);
+      const first=card.querySelector('.panel'); card.insertBefore(wrap, first||card.firstChild);
     }
+    return {wrap,img};
+  }
 
-    // Animazione continua dei nodi lungo l'ellisse
-    function animateNodes() {
-      if (!document.body.classList.contains('auto-rotate')) return;
-      
-      const currentTime = Date.now() / 1000; // Tempo in secondi
-      
-      // Anima nodi anello interno (40s per giro completo)
-      nodesInner.forEach((node, index) => {
-        const baseAngle = (360 / 8) * index + 22.5; // Angolo base con sfalsamento
-        const currentAngle = baseAngle + (currentTime * 360 / 40) % 360; // Rotazione in 40s
-        const radian = (currentAngle * Math.PI) / 180;
-        
-        const radiusX = parseFloat(node.dataset.radiusX);
-        const radiusY = parseFloat(node.dataset.radiusY);
-        
-        const x = Math.cos(radian) * radiusX;
-        const y = Math.sin(radian) * radiusY;
-        
-        node.style.left = `calc(50% + ${x}px)`;
-        node.style.top = `calc(50% + ${y}px)`;
-        
-        // Mantieni testo orizzontale
-        node.style.setProperty('--counter-rotate', '0deg');
-        
-        // Aggiorna distanza per le linee
-        const distance = Math.sqrt(x * x + y * y);
-        node.dataset.distance = distance;
-        node.dataset.angle = currentAngle;
-      });
-      
-      // Anima nodi anello esterno (60s per giro completo)
-      nodesOuter.forEach((node, index) => {
-        const baseAngle = (360 / 8) * index; // Angolo base senza sfalsamento
-        const currentAngle = baseAngle + (currentTime * 360 / 60) % 360; // Rotazione in 60s
-        const radian = (currentAngle * Math.PI) / 180;
-        
-        const radiusX = parseFloat(node.dataset.radiusX);
-        const radiusY = parseFloat(node.dataset.radiusY);
-        
-        const x = Math.cos(radian) * radiusX;
-        const y = Math.sin(radian) * radiusY;
-        
-        node.style.left = `calc(50% + ${x}px)`;
-        node.style.top = `calc(50% + ${y}px)`;
-        
-        // Mantieni testo orizzontale
-        node.style.setProperty('--counter-rotate', '0deg');
-        
-        // Aggiorna distanza per le linee
-        const distance = Math.sqrt(x * x + y * y);
-        node.dataset.distance = distance;
-        node.dataset.angle = currentAngle;
-      });
-      
-      // Aggiorna linee dinamiche
-      updateDynamicSpokes();
-      
-      // Continua l'animazione
-      animationId = requestAnimationFrame(animateNodes);
+  function nukeLegacy(){
+    document.querySelectorAll('#sheet, body > .facts').forEach(n=>n.remove());
+  }
+
+  let seq=0;
+  function loadCard(id){
+    const slot=ensureFacts(); if(!slot) return;
+    const {wrap,img}=slot; wrap.hidden=true; img.removeAttribute('src');
+    const cand=[`${id}.webp`,`${id}.png`,`${id}.jpg`,'generica.webp','generica.png','generica.jpg'];
+    const me=++seq; let i=0;
+    (function next(){
+      if(me!==seq) return;
+      if(i>=cand.length){wrap.hidden=true;return;}
+      const src=`/dms-gemello-news/landing/cards/${cand[i++]}`+`?t=${Date.now()}`;
+      const p=new Image(); p.onload=()=>{if(me!==seq)return; img.src=src; wrap.hidden=false;}; p.onerror=next; p.src=src;
+    })();
+  }
+
+  function buildNav(currentId){
+    let bar=$id('minLinks');
+    if(!bar){ bar=document.createElement('div'); bar.id='minLinks'; bar.className='min-links'; ($id('titleRow')||$id('card')||document.body).appendChild(bar); }
+    bar.innerHTML='';
+    IDS.forEach(id=>{
+      const m=(window.DATA||[]).find(x=>x.id===id); if(!m)return;
+      const b=document.createElement('button'); b.className='chip nav'; b.textContent=(m.short||m.nome||id).toUpperCase();
+      if(id===currentId) b.disabled=true;
+      b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation(); openFull(m);});
+      bar.appendChild(b);
+    });
+  }
+
+  function hook(){
+    // Hook rimosso - usa solo la definizione openFull principale
+  }
+
+  function install(){
+    document.documentElement.dataset.lines='on'; (window.redraw||window.draw||function(){})();
+    nukeLegacy(); ensureFacts();
+    new MutationObserver(()=>{ nukeLegacy(); }).observe(document.body,{childList:true,subtree:true});
+  }
+
+  if(ready()) install();
+  else { const t0=Date.now(); const tm=setInterval(()=>{ if(ready()){clearInterval(tm);install();} else if(Date.now()-t0>15000){clearInterval(tm);} },40); }
+})();
+
+/* ---- Alias nomi → id canonico ---- */
+const ALIAS = {
+  agid: ['agid', "agenziadigitale", "agid • agenzia per l'italia digitale"],
+  mef:  ['mef', 'economia', 'economia e finanze'],
+  interno: ['interno', 'ministero dell\'interno'],
+  mimit: ['mimit', 'imprese e made in italy'],
+  mase: ['mase', 'ambiente'],
+  mit: ['mit', 'infrastrutture'],
+  salute: ['salute', 'ministero della salute'],
+  mic: ['mic', 'cultura'],
+  turismo: ['turismo'],
+  masaf: ['masaf', 'agricoltura'],
+  mim: ['mim', 'istruzione'],
+  lavoro: ['lavoro', 'ministero del lavoro'],
+  maeci: ['maeci', 'esteri'],
+  ae: ['ae', 'agenzia entrate'],
+  adm: ['adm', 'dogane'],
+  pagopa: ['pagopa', 'pagopa s.p.a.']
+};
+function norm(s){ return (s||'').toLowerCase().replace(/[^\w]/g,''); }
+function canon(id){
+  const n = norm(id);
+  for (const k in ALIAS){ if (ALIAS[k].some(x=>norm(x)===n)) return k; }
+  return n;
+}
+
+/* ---- Map ministero → PDF (slug in SPOT) ---- */
+// Rimossa dichiarazione duplicata, uso quella completa sotto
+
+/* ---- Caricamento mapping immagini ---- */
+// Rimuovo fetch JSON, uso solo DOC_MAP inline
+let CARD_MAP = {};
+
+/* ---- Funzione openFull definitiva ---- */
+// Alias corti -> chiavi del mapping/slug
+const ALIASES = {
+  mef:'mef', interno:'interno', mimit:'mimit', mase:'mase', mit:'mit',
+  salute:'salute', mic:'mic', turismo:'turismo', masaf:'masaf', mim:'mim',
+  lavoro:'lavoro', maeci:'maeci', agid:'agid', pagopa:'pagopa', ae:'ae', adm:'adm'
+};
+
+// Fallback mapping completo come da istruzioni
+const MAPPING_FALLBACK={"MEF":["mef-1.png","mef-2.png"],"Interno":["interno-1.png"],"AgID":["agid-1.png","agid-2.png"],"ADM":["adm-1.png"],"AE":["ae-1.png"],"MASE":["mase-1.png"],"MIT":["mit-1.png"],"Salute":["salute-1.png"],"MIC":["mic-1.png"],"Turismo":["turismo-1.png"],"MASAF":["masaf-1.png"],"MIM":["mim-1.png"],"Lavoro":["lavoro-1.png"],"MAECI":["maeci-1.png"],"MIMIT":["mimit-1.png"],"PagoPA S.p.A.":["pagopa-1.png"]};
+
+window.loadMapping = async function(){
+  return MAPPING_FALLBACK;
+}
+
+// Sorgente unica dei contenuti per modal + SPOT
+window.DOC_MAP = {
+  agid:   { title:'AgID',   images:['img/ministeri/agid-01.jpg'], pdfs:[
+    {label:'A4',   url:'/dms-gemello-news/docs/agid/a4.pdf'},
+    {label:'PDF 1',url:'/dms-gemello-news/docs/agid/doc1.pdf'}
+  ]},
+  ae:     { title:'AE - Agenzia Entrate', images:['img/ministeri/ae-01.jpg'], pdfs:[] },
+  adm:    { title:'ADM - Agenzia Dogane', images:['img/ministeri/adm-01.jpg'], pdfs:[] },
+  mef:    { title:'MEF',    images:['img/ministeri/mef-01.jpg'], pdfs:[] },
+  interno:{ title:'Ministero dell\'Interno', images:['img/ministeri/interno-01.jpg'], pdfs:[] },
+  mimit:  { title:'MIMIT', images:['img/ministeri/mimit-01.jpg'], pdfs:[] },
+  mase:   { title:'MASE',  images:['img/ministeri/mase-01.jpg'], pdfs:[] },
+  mit:    { title:'MIT',   images:['img/ministeri/mit-01.jpg'],  pdfs:[] },
+  salute: { title:'Salute',images:['img/ministeri/salute-01.jpg'],pdfs:[] },
+  mic:    { title:'MIC - Cultura', images:['img/ministeri/mic-01.jpg'], pdfs:[] },
+  turismo:{ title:'Turismo', images:['img/ministeri/turismo-01.jpg'], pdfs:[] },
+  masaf:  { title:'MASAF', images:['img/ministeri/masaf-01.jpg'], pdfs:[] },
+  mim:    { title:'MIM',   images:['img/ministeri/mim-01.jpg'],   pdfs:[] },
+  lavoro: { title:'Ministero del Lavoro', images:['img/ministeri/lavoro-01.jpg'], pdfs:[] },
+  maeci:  { title:'MAECI', images:['img/ministeri/maeci-01.jpg'], pdfs:[] },
+  pagopa: { title:'PagoPA S.p.A.', images:['img/ministeri/pagopa-01.jpg'], pdfs:[] },
+};
+
+window.renderSpotButtons = function(minKey){
+  const c = document.querySelector('#spotBtns'); 
+  if(!c) return;
+  c.innerHTML='';
+  (DOC_MAP[minKey]||[]).forEach(slug=>{
+    const a=document.createElement('a');
+    a.href=`spot.html#${slug}`; 
+    a.textContent=`Apri in SPOT — ${slug.replace(/-/g,' ')}`;
+    c.appendChild(a);
+  });
+}
+
+window.setupModalHeader = function(title, alias){
+  const titleEl = document.getElementById('modalTitle');
+  if(titleEl) titleEl.textContent = title || alias.toUpperCase();
+  window.renderSpotButtons(alias);
+}
+
+window.openFull = async function(key){
+  setupModalHeader(key);
+  renderSpotButtons(key);
+  // logica esistente apertura modal
+  const mapping = await window.loadMapping();
+  let imgs = (mapping[key] || []).map(x => `./cards/${x}`);
+  if(!imgs.length) imgs = ['./cards/generic.png'];
+
+  const modal = document.getElementById('modal');
+  const body = document.getElementById('modalBody');
+  if(modal && body) {
+    body.innerHTML = `<img src="${imgs[0]}" style="width:100%;height:auto;display:block;">`;
+    modal.style.display = 'block';
+    document.body.classList.add('modal-open');
+  }
+};
+
+function closeModal(){
+  const overlay = document.getElementById('modalOverlay');
+  if(overlay) overlay.classList.remove('is-open');
+  document.body.classList.remove('modal-open');
+}
+
+/* ---- Viewer A4: mantiene frecce esistenti ---- */
+function renderSlide(files, idx){
+  const i = ((idx%files.length)+files.length)%files.length;
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `<img src="cards/${files[i]}" alt="" style="width:100%;height:auto;display:block;">`;
+  // collega le frecce già presenti (se usate):
+  window._currentSlide = { files, index:i };
+}
+function prevSlide(){ if(window._currentSlide){ renderSlide(window._currentSlide.files, window._currentSlide.index-1);} }
+function nextSlide(){ if(window._currentSlide){ renderSlide(window._currentSlide.files, window._currentSlide.index+1);} }
+function closeModal(){ 
+  document.getElementById('modal').style.display = 'none';
+  document.body.classList.remove('modal-open'); 
+}
+
+function renderSpotButtons(key){
+  const slugs = (window.DOC_MAP?.[key]?.spot || []);
+  const box = document.getElementById('spotBtns');
+  if(!box) return;
+  const base = "/dms-gemello-news/landing/spot.html#";
+  box.innerHTML = slugs.map(s => 
+    `<a class="btn btn-spot" href="${base}${s}">Apri in SPOT — ${s}</a>`
+  ).join('');
+}
+
+// Collega il pulsante back
+document.addEventListener('DOMContentLoaded', function(){
+  const btn = document.getElementById('btnBackToMap');
+  if(btn) btn.onclick = closeModal;
+});
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+</script>
+<script>
+(function(){
+  const MAP = window.DOC_MAP || {};
+  const VALID = new Set(Object.keys(MAP));
+  let cur=null, idx=0;
+
+  function hardClose(){
+    document.getElementById('modalOverlay')?.classList.remove('is-open');
+    document.getElementById('modalCard')?.classList.remove('modal-open');
+    document.documentElement.classList.remove('modal-open');
+    const t=document.getElementById('modalTitle'); if(t) t.textContent='-';
+    const img=document.getElementById('docImg');   if(img) img.removeAttribute('src');
+    document.getElementById('spotBtns')?.replaceChildren();
+  }
+  window.closeModal = ()=>hardClose();
+
+  function setImage(slug, i=0){
+    const imgs = MAP[slug]?.images || [];
+    if(!imgs.length) return false;
+    idx = (i+imgs.length)%imgs.length;
+    const img = document.getElementById('docImg');
+    if(img) img.src = imgs[idx];
+    return true;
+  }
+
+  function renderSpotButtons(slug){
+    const box=document.getElementById('spotBtns'); if(!box) return;
+    const frag=document.createDocumentFragment();
+    const aSpot=document.createElement('a');
+    aSpot.className='btn btn-light';
+    aSpot.href=`/dms-gemello-news/landing/spot.html#${slug}`;
+    aSpot.textContent='Apri in SPOT — once only / sdg';
+    frag.appendChild(aSpot);
+    (MAP[slug]?.pdfs||[]).slice(0,3).forEach(p=>{
+      const a=document.createElement('a');
+      a.className='btn btn-outline-light'; a.target='_blank'; a.rel='noopener';
+      a.href=p.url; a.textContent=p.label||'PDF';
+      frag.appendChild(a);
+    });
+    box.replaceChildren(frag);
+  }
+
+  window.openFull = function(slug){
+    slug = (slug || (location.hash||'').slice(1)).toLowerCase().trim();
+    if(!VALID.has(slug)) return hardClose();          // niente slug ⇒ niente modal
+    cur=slug; idx=0;
+    const t=document.getElementById('modalTitle');
+    if(t) t.textContent = MAP[slug]?.title || slug.toUpperCase();
+    setImage(slug,0); renderSpotButtons(slug);
+    document.getElementById('modalOverlay')?.classList.add('is-open');
+    document.getElementById('modalCard')?.classList.add('modal-open');
+    document.documentElement.classList.add('modal-open');
+    const prev=document.getElementById('btnPrev'), next=document.getElementById('btnNext');
+    if(prev) prev.onclick=()=>setImage(cur, idx-1);
+    if(next) next.onclick=()=>setImage(cur, idx+1);
+  };
+
+  function maybeFromHash(){
+    const s=(location.hash||'').slice(1).toLowerCase().trim();
+    if(new Set(Object.keys(MAP)).has(s)) window.openFull(s);
+    else {
+      // se arrivo da Home→Mappa con hash sporco, lo pulisco e CHIUDO
+      hardClose();
+      history.replaceState(null, '', location.pathname);
     }
+  }
 
-    // Setup posizionamento nodi concentrici (ovali fissi)
-    function setupNodes() {
-      // Raggi ellittici allungati in orizzontale per sfruttare meglio lo spazio
-      const innerRadiusX = Math.min(350, Math.min(mapContainer.offsetWidth, mapContainer.offsetHeight) * 0.44);
-      const innerRadiusY = Math.min(160, Math.min(mapContainer.offsetWidth, mapContainer.offsetHeight) * 0.20);
-      const outerRadiusX = Math.min(500, Math.min(mapContainer.offsetWidth, mapContainer.offsetHeight) * 0.62);
-      const outerRadiusY = Math.min(240, Math.min(mapContainer.offsetWidth, mapContainer.offsetHeight) * 0.30);
-      
-      // Salva i raggi per uso nelle linee dinamiche
-      window.ellipseRadii = { innerRadiusX, innerRadiusY, outerRadiusX, outerRadiusY };
-      
-      // Posiziona nodi anello interno (8 nodi) - ellisse fissa
-      nodesInner.forEach((node, index) => {
-        const angle = (360 / 8) * index + 22.5; // Sfalsamento di 22.5°
-        const radian = (angle * Math.PI) / 180;
-        
-        const x = Math.cos(radian) * innerRadiusX;
-        const y = Math.sin(radian) * innerRadiusY;
-        
-        // Calcola distanza dal centro per questa posizione
-        const distanceFromCenter = Math.sqrt(x * x + y * y);
-        
-        node.style.left = `calc(50% + ${x}px)`;
-        node.style.top = `calc(50% + ${y}px)`;
-        node.dataset.angle = angle;
-        node.dataset.baseX = x;
-        node.dataset.baseY = y;
-        node.dataset.radiusX = innerRadiusX;
-        node.dataset.radiusY = innerRadiusY;
-        node.dataset.distance = distanceFromCenter;
-        
-        // Contro-rotazione per mantenere testo orizzontale
-        node.style.setProperty('--counter-rotate', `-${angle}deg`);
-      });
-      
-      // Posiziona nodi anello esterno (8 nodi) - ellisse fissa
-      nodesOuter.forEach((node, index) => {
-        const angle = (360 / 8) * index; // Nessuno sfalsamento iniziale
-        const radian = (angle * Math.PI) / 180;
-        
-        const x = Math.cos(radian) * outerRadiusX;
-        const y = Math.sin(radian) * outerRadiusY;
-        
-        // Calcola distanza dal centro per questa posizione
-        const distanceFromCenter = Math.sqrt(x * x + y * y);
-        
-        node.style.left = `calc(50% + ${x}px)`;
-        node.style.top = `calc(50% + ${y}px)`;
-        node.dataset.angle = angle;
-        node.dataset.baseX = x;
-        node.dataset.baseY = y;
-        node.dataset.radiusX = outerRadiusX;
-        node.dataset.radiusY = outerRadiusY;
-        node.dataset.distance = distanceFromCenter;
-        
-        // Contro-rotazione per mantenere testo orizzontale
-        node.style.setProperty('--counter-rotate', `-${angle}deg`);
-      });
-      
-      // Aggiorna le linee dinamiche
-      updateDynamicSpokes();
-    }
-
-    // Setup linee radiali dinamiche
-    function setupSpokes() {
-      spokes.innerHTML = '';
-      updateDynamicSpokes();
-    }
-
-    // Aggiorna linee dinamiche in base alla posizione REALE dei nodi
-    function updateDynamicSpokes() {
-      spokes.innerHTML = '';
-      
-      // Crea linee per nodi anello interno
-      nodesInner.forEach(node => {
-        const spoke = document.createElement('div');
-        spoke.className = 'spoke spoke-inner';
-        
-        // Calcola l'angolo REALE dalla posizione attuale del nodo
-        const rect = node.getBoundingClientRect();
-        const mapRect = mapContainer.getBoundingClientRect();
-        const centerX = mapRect.left + mapRect.width / 2;
-        const centerY = mapRect.top + mapRect.height / 2;
-        const nodeX = rect.left + rect.width / 2;
-        const nodeY = rect.top + rect.height / 2;
-        
-        const deltaX = nodeX - centerX;
-        const deltaY = nodeY - centerY;
-        const realAngle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        
-        // Posiziona la linea dal centro verso il nodo REALE
-        spoke.style.position = 'absolute';
-        spoke.style.left = '50%';
-        spoke.style.top = '50%';
-        spoke.style.transform = `rotate(${realAngle}deg)`;
-        spoke.style.width = `${distance - 25}px`; // Si ferma al centro del nodo
-        spoke.style.height = '2px';
-        spoke.style.background = 'rgba(56, 189, 248, 0.4)';
-        spoke.style.transformOrigin = 'left center';
-        
-        spokes.appendChild(spoke);
-      });
-      
-      // Crea linee per nodi anello esterno
-      nodesOuter.forEach(node => {
-        const spoke = document.createElement('div');
-        spoke.className = 'spoke spoke-outer';
-        
-        // Calcola l'angolo REALE dalla posizione attuale del nodo
-        const rect = node.getBoundingClientRect();
-        const mapRect = mapContainer.getBoundingClientRect();
-        const centerX = mapRect.left + mapRect.width / 2;
-        const centerY = mapRect.top + mapRect.height / 2;
-        const nodeX = rect.left + rect.width / 2;
-        const nodeY = rect.top + rect.height / 2;
-        
-        const deltaX = nodeX - centerX;
-        const deltaY = nodeY - centerY;
-        const realAngle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        
-        // Posiziona la linea dal centro verso il nodo REALE
-        spoke.style.position = 'absolute';
-        spoke.style.left = '50%';
-        spoke.style.top = '50%';
-        spoke.style.transform = `rotate(${realAngle}deg)`;
-        spoke.style.width = `${distance - 25}px`; // Si ferma al centro del nodo
-        spoke.style.height = '2px';
-        spoke.style.background = 'rgba(56, 189, 248, 0.6)';
-        spoke.style.transformOrigin = 'left center';
-        
-        spokes.appendChild(spoke);
-      });
-    }
-
-    // Event listeners
-    function setupEventListeners() {
-      // Click nodi
-      allNodes.forEach(node => {
-        node.addEventListener('click', () => {
-          const slug = node.dataset.slug;
-          openModal(slug);
-        });
-      });
-
-      // Modal
-      modalBack.addEventListener('click', closeModal);
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-      });
-
-      // Keyboard
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
-      });
-
-      // Auto-rotate
-      autoRotateCheck.addEventListener('change', (e) => {
-        if (e.target.checked) {
-          startAutoRotation();
-        } else {
-          stopAutoRotation();
-        }
-      });
-
-      // Linee
-      showLinesCheck.addEventListener('change', (e) => {
-        spokes.classList.toggle('hidden', !e.target.checked);
-      });
-
-      // Ricerca
-      searchInput.addEventListener('input', handleSearch);
-
-      // Zoom
-      document.querySelectorAll('.zoom-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const zoom = parseInt(btn.dataset.zoom);
-          setZoom(zoom);
-        });
-      });
-
-      // Hash change
-      window.addEventListener('hashchange', handleHashChange);
-
-      // 3) Logo centrale → apre modal di PCM
-      const hubIcon = document.getElementById('hubIcon');
-      if (hubIcon) {
-        hubIcon.style.cursor = 'pointer';
-        
-        // Click per desktop
-        hubIcon.addEventListener('click', (e) => {
-          e.preventDefault();
-          openModal('pcm');
-        });
-        
-        // Touch per mobile/iPad
-        hubIcon.addEventListener('touchend', (e) => {
-          e.preventDefault();
-          openModal('pcm');
-        });
-      }
-    }
-
-    // Auto-rotation
-    function startAutoRotation() {
-      document.body.classList.add('auto-rotate');
-      animateNodes(); // Avvia l'animazione continua
-    }
-
-    function stopAutoRotation() {
-      document.body.classList.remove('auto-rotate');
-      if (animationId) {
-        cancelAnimationFrame(animationId);
-        animationId = null;
-      }
-    }
-
-    // Modal
-    function openModal(slug) {
-      const data = MINISTERI_DATA[slug];
-      if (!data) return;
-
-      modalTitle.textContent = data.title;
-      modalSpot.href = `spot.html#${slug}`;
-      
-      // Render cards
-      modalBody.innerHTML = data.cards.map(card => 
-        `<div class="doc-card">
-          <img src="${card.img}" alt="${card.alt}" loading="lazy">
-        </div>`
-      ).join('');
-
-      modal.classList.add('is-open');
-      modal.setAttribute('aria-hidden', 'false');
-      
-      // Update hash
-      if (location.hash.slice(1) !== slug) {
-        history.pushState(null, '', `#${slug}`);
-      }
-    }
-
-    function closeModal() {
-      modal.classList.remove('is-open');
-      modal.setAttribute('aria-hidden', 'true');
-      
-      // Clear hash
-      if (location.hash) {
-        history.pushState(null, '', location.pathname);
-      }
-    }
-
-    // Hash handling
-    function handleInitialHash() {
-      const slug = location.hash.slice(1);
-      if (slug && MINISTERI_DATA[slug]) {
-        openModal(slug);
-      }
-    }
-
-    function handleHashChange() {
-      const slug = location.hash.slice(1);
-      if (slug && MINISTERI_DATA[slug]) {
-        openModal(slug);
-      } else {
-        closeModal();
-      }
-    }
-
-    // Ricerca
-    function handleSearch() {
-      const query = searchInput.value.toLowerCase().trim();
-      
-      allNodes.forEach(node => {
-        const slug = node.dataset.slug;
-        const data = MINISTERI_DATA[slug];
-        const text = node.textContent.toLowerCase();
-        
-        const matches = !query || 
-          text.includes(query) || 
-          slug.includes(query) || 
-          data.title.toLowerCase().includes(query);
-        
-        node.classList.toggle('filtered', !matches);
-      });
-    }
-
-    // Zoom
-    function setZoom(zoom) {
-      currentZoom = zoom;
-      mapContainer.className = `zoom-${zoom}`;
-      
-      // Ricalcola posizioni e linee per il nuovo zoom
-      setupNodes();
-      
-      document.querySelectorAll('.zoom-btn').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.zoom) === zoom);
-      });
-    }
-
-    // Avvio
-    document.addEventListener('DOMContentLoaded', init);
-  </script>
+  // all'avvio: chiudi sempre e poi valuta l'hash
+  document.addEventListener('DOMContentLoaded', ()=>{
+    hardClose();
+    maybeFromHash();
+  });
+  window.addEventListener('hashchange', maybeFromHash, {passive:true});
+})();
+</script>
+<script>
+(function(){
+  const VALID = new Set(['agid','mef','interno','salute','mimit','mase','mit','adm','maeci','turismo','masaf','pagopa','ae','mim','lavoro','mic']);
+  function bindNodes(){
+    document.querySelectorAll('[data-slug]').forEach(el=>{
+      const slug = el.dataset.slug;
+      if(!VALID.has(slug)) return;
+      el.style.cursor='pointer';
+      el.style.userSelect='none'; el.style.webkitUserSelect='none'; el.style.webkitTouchCallout='none';
+      const go = (e)=>{ e.preventDefault(); if(window.openFull) window.openFull(slug); };
+      el.addEventListener('click', go, {passive:false});
+      el.addEventListener('touchend', go, {passive:false});
+    });
+  }
+  // chiudi sempre il modal all'avvio
+  document.addEventListener('DOMContentLoaded', ()=>{ bindNodes(); document.getElementById('modalRoot')?.classList.remove('is-open'); });
+  window.addEventListener('hashchange', ()=>{ /* niente auto-open da home */ });
+})();
+</script>
 </body>
 </html>
 
+/* force deploy */
