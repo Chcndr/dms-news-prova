@@ -177,34 +177,34 @@
       <section id="riferimenti-normativi" style="margin-top:40px">
         <h2>Riferimenti normativi & PNRR</h2>
         <div class="norme-grid">
-          <a class="btn-norme" href="javascript:void(0)" data-norma="sdg-2018-1724">
+          <a class="btn-norme" href="https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX:32018R1724" target="_blank" data-norma="sdg-2018-1724">
             Single Digital Gateway (Reg. UE 2018/1724)
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="interop-europe-2024-903">
+          <a class="btn-norme" href="https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX:32024R0903" target="_blank" data-norma="interop-europe-2024-903">
             Interoperable Europe (Reg. UE 2024/903)
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="eidas2-2024-1183">
+          <a class="btn-norme" href="https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX:32024R1183" target="_blank" data-norma="eidas2-2024-1183">
             eIDAS 2 – Digital Wallet (Reg. UE 2024/1183)
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="espr-dpp-2024-1781">
+          <a class="btn-norme" href="https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX:32024R1781" target="_blank" data-norma="espr-dpp-2024-1781">
             ESPR & Digital Product Passport (Reg. UE 2024/1781)
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="direttiva-servizi-2006-123">
+          <a class="btn-norme" href="https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=CELEX:32006L0123" target="_blank" data-norma="direttiva-servizi-2006-123">
             Direttiva Servizi (2006/123/CE – "Bolkestein")
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="suap-dpr-160-2010">
+          <a class="btn-norme" href="https://www.gazzettaufficiale.it/eli/id/2010/10/07/010G0183/sg" target="_blank" data-norma="suap-dpr-160-2010">
             SUAP – DPR 160/2010
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="dogane-com-2023-258-260">
+          <a class="btn-norme" href="https://eur-lex.europa.eu/legal-content/IT/TXT/?uri=COM:2023:258:FIN" target="_blank" data-norma="dogane-com-2023-258-260">
             Riforma Dogane UE (pacchetto COM(2023) 258–260)
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="pnrr-italia-domani">
+          <a class="btn-norme" href="https://www.governo.it/sites/governo.it/files/PNRR.pdf" target="_blank" data-norma="pnrr-italia-domani">
             PNRR – Italia Domani
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="pdnd">
+          <a class="btn-norme" href="https://www.agid.gov.it/it/infrastrutture/sistema-pubblico-connettivita/pdnd-interoperabilita" target="_blank" data-norma="pdnd">
             PDND – Piattaforma Digitale Nazionale Dati
           </a>
-          <a class="btn-norme" href="javascript:void(0)" data-norma="agid-linee-interoperabilita">
+          <a class="btn-norme" href="https://www.agid.gov.it/it/infrastrutture/sistema-pubblico-connettivita/il-nuovo-modello-interoperabilita" target="_blank" data-norma="agid-linee-interoperabilita">
             AgID – Linee guida interoperabilità
           </a>
         </div>
@@ -433,13 +433,19 @@ window.DOC_MAP = {
     scrollToViewer();
   }
 
-  // 4) Deleghe click: qualunque link a .pdf nella pagina SPOT
+  // 4) Deleghe click: distingue tra PDF (nuova scheda) e norme (viewer)
   document.addEventListener('click', function(e){
     const a = e.target.closest('a');
     if (!a) return;
     const href = a.getAttribute('href') || '';
-    // solo PDF locali (per esterni lasciamo comportamento normale)
-    if (href.endsWith('.pdf') && !a.hasAttribute('data-external')){
+    
+    // Se è un pulsante delle norme, non fare nulla (si aprirà normalmente)
+    if (a.classList.contains('btn-norme')) {
+      return; // lascia che si apra normalmente
+    }
+    
+    // Solo PDF locali nel viewer (per i documenti della lista sinistra)
+    if (href.endsWith('.pdf') && !a.hasAttribute('data-external') && !a.hasAttribute('target')){
       e.preventDefault();
       openInViewer(href);
       // evidenzia attivo nella lista
