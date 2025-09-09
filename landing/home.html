@@ -12,15 +12,21 @@ addEventListener('click', function (e) {
   let href = a.getAttribute('href') || '';
   const isHashDoc = /^#(doc|vid)-/.test(href);
   const isBadLanding = /^\/landing\//.test(href);
+  const isBadRepo = /^\/dms-gemello-news\//.test(href);
 
   if (isHashDoc) {
     e.preventDefault(); e.stopImmediatePropagation();
-    top.location.href = '/dms-gemello-news/' + href.replace(/^#/, '#');
+    top.location.href = '/dms-news-prova/' + href.replace(/^#/, '#');
     return;
   }
   if (isBadLanding) {
     e.preventDefault(); e.stopImmediatePropagation();
-    top.location.href = href.replace(/^\/landing\//, '/dms-gemello-news/landing/');
+    top.location.href = href.replace(/^\/landing\//, '/dms-news-prova/landing/');
+    return;
+  }
+  if (isBadRepo) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    top.location.href = href.replace(/^\/dms-gemello-news\//, '/dms-news-prova/');
     return;
   }
 }, { capture: true, passive: false });
@@ -389,9 +395,9 @@ addEventListener('click', function (e) {
 <body>
   <!-- Nav -->
   <nav class="top">
-    <a class="btn" href="./home.html">Home</a>
-    <a class="btn" href="./mappa-ministeri.html">Mappa</a>
-    <a class="btn" href="./spot.html">Spot</a>
+    <a class="btn" href="/dms-news-prova/landing/home.html">Home</a>
+    <a class="btn" href="/dms-news-prova/landing/mappa-ministeri.html">Mappa</a>
+    <a class="btn" href="/dms-news-prova/landing/spot.html">Spot</a>
   </nav>
 
   <!-- Claim -->

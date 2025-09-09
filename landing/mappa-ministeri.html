@@ -455,9 +455,9 @@
 <body>
   <!-- Navbar -->
   <nav class="topnav">
-    <a href="./home.html">Home</a>
-    <a href="./mappa-ministeri.html" class="active">Mappa</a>
-    <a href="./spot.html">Spot</a>
+    <a href="/dms-news-prova/landing/home.html">Home</a>
+    <a href="/dms-news-prova/landing/mappa-ministeri.html" class="active">Mappa</a>
+    <a href="/dms-news-prova/landing/spot.html">Spot</a>
   </nav>
 
   <!-- Container principale -->
@@ -1030,14 +1030,14 @@
       
       const terms = (hotTerms[slug] || []).join(",");
       const spotUrl = terms ? 
-        `./spot.html?hot=${encodeURIComponent(terms)}` : 
-        `./spot.html`;
+        `/dms-news-prova/landing/spot.html?hot=${encodeURIComponent(terms)}` : 
+        `/dms-news-prova/landing/spot.html`;
       
       modalActions.innerHTML = `
         <a href="${spotUrl}"
            class="btn btn-primary btn-go"
            role="button">vai a PDF pertinenti</a>
-        <a href="./spot.html#riferimenti-normativi"
+        <a href="/dms-news-prova/landing/spot.html#riferimenti-normativi"
            class="btn btn-ghost btn-norme"
            role="button" aria-label="Riferimenti normativi e PNRR">Riferimenti normativi & PNRR</a>
       `;
